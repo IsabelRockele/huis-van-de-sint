@@ -2,12 +2,26 @@
 'use strict';
 const canvas=document.getElementById('scene'),ctx=canvas.getContext('2d'),status=document.getElementById('scene-status'),base=window.SINT_ASSET_BASE||'./assets-local/';
 const images=new Map();let room=null,count=0,active=false,reduced=false,clock=0,last=0,elapsed=0,busy=false,callback=null,token=0,awardValue='',question={},history=[],storyPage=0,partyView=true;
-function asset(name){if(name==='bakpiet-spelatlas.png')name='bakpiet-spelatlas-v2.png';if(!images.has(name)){const im=new Image();im.src=base+name;im.onerror=()=>{document.getElementById('asset-error').hidden=false;};images.set(name,im);}return images.get(name);}
+const roomAssets={
+ pakjes:['cadeautjespiet-spelatlas.png','pakjespiet-neerzetten.png','pakjespiet-werkvolgorde.png','pakjespiet-inpakstappen.png','werktafel-en-zak.png'],
+ keuken:['bakpiet-spelatlas-v2.png','bakpiet-tafelwerk.png','werktafel-en-zak.png'],
+ magazijn:['magazijnpiet-hendelbeweging.png'],
+ schrijfkamer:['schrijfpiet-spelatlas.png'],
+ postkamer:['postpiet-spelatlas.png','werktafel-en-zak.png'],
+ bibliotheek:['leespiet-spelatlas.png','verhaalprenten-feest.png','bibliotheek-feest.png'],
+ atelier:['speelgoedpiet-spelatlas.png']
+};
+function asset(name,priority='auto'){if(name==='bakpiet-spelatlas.png')name='bakpiet-spelatlas-v2.png';if(!images.has(name)){const im=new Image();im.decoding='async';im.fetchPriority=priority;im.onerror=()=>{im.failed=true;if(room&&needed(room).includes(name))document.getElementById('asset-error').hidden=false;};images.set(name,im);im.src=base+name;}return images.get(name);}
+function needed(r){return [r.image,...(roomAssets[r.id]||[])];}
+function preload(r){needed(r).forEach(name=>asset(name,'low'));}
+function ready(){return !room||needed(room).every(name=>{const im=asset(name);return im.complete&&im.naturalWidth;});}
+
 function drawImage(im,...args){if(im.complete&&im.naturalWidth)ctx.drawImage(im,...args);}
 function finish(){busy=false;history[count]=question;count=Math.min(8,count+1);status.textContent=count===8?'Acht opdrachten klaar. Wat heb jij goed geholpen!':'Goed geholpen! Kies de volgende opdracht.';const cb=callback;callback=null;if(cb)cb();}
 function cancel(){token++;busy=false;callback=null;elapsed=0;}
 window.SintScene={
- enter(next,n,questions=[]){cancel();storyPage=0;partyView=true;room=next;if(next.id==='bibliotheek'){asset('bibliotheek-feest.png');asset('verhaalprenten-feest.png');}count=n;history=questions.slice(0,n);question=questions[n]||{};active=true;asset(next.image);asset(next.hero+'-spelatlas.png');if(next.id==='pakjes'){asset('pakjespiet-neerzetten.png');asset('pakjespiet-werkvolgorde.png');asset('pakjespiet-inpakstappen.png');}if(['pakjes','keuken','postkamer'].includes(next.id))asset('werktafel-en-zak.png');if(next.id==='keuken')asset('bakpiet-tafelwerk.png');if(next.id==='magazijn')asset('magazijnpiet-hendelbeweging.png');if(actions[next.id])asset(actions[next.id]);status.textContent=next.mission;document.getElementById('asset-error').hidden=true;},
+ preload,
+ enter(next,n,questions=[]){cancel();storyPage=0;partyView=true;room=next;count=n;history=questions.slice(0,n);question=questions[n]||{};active=true;needed(next).forEach(name=>{asset(name,'high').fetchPriority='high';});status.textContent=next.mission;document.getElementById('asset-error').hidden=!needed(next).some(name=>asset(name).failed);},
  leave(){cancel();active=false;},
  reduced(v){reduced=v;if(v&&busy)finish();},
  celebrate(value,cb,q={}){if(busy)return;question=q;awardValue=String(value);callback=cb;elapsed=0;busy=true;status.textContent=room.id==='keuken'?'Eerst roert Bakpiet het deeg mooi glad.':'Wat goed! Kijk wat er in de kamer gebeurt…';if(reduced)finish();},
@@ -298,9 +312,10 @@ function rewardScene(){
 }
 function draw(){
  ctx.clearRect(0,0,1200,675);if(!room)return;drawImage(asset(room.image),0,0,1200,675);
+ if(!ready()){round(240,260,720,140,24,'#fff8e9','#d9ad59');label('We maken de kamer voor je klaar…',600,320,660,30);label('De prenten worden geladen.',600,362,660,22);status.textContent='Even wachten, de pieten komen eraan.';return;}
  if(room.id==='keuken')kitchenScene();else if(room.id==='pakjes')packingScene();else if(room.id==='schrijfkamer')writingScene();else if(room.id==='magazijn')warehouseScene();else if(room.id==='postkamer')mailScene();else if(room.id==='bibliotheek')libraryScene();else if(room.id==='atelier')atelierScene();else rewardScene();
 }
-function tick(stamp){requestAnimationFrame(tick);const dt=Math.min(.05,(stamp-last)/1000||0);last=stamp;if(!active||document.hidden)return;if(!reduced)clock+=dt;if(busy){elapsed+=dt;if(elapsed>=duration())finish();}draw();}
+function tick(stamp){requestAnimationFrame(tick);const dt=Math.min(.05,(stamp-last)/1000||0);last=stamp;if(!active||document.hidden)return;if(!reduced)clock+=dt;if(busy&&ready()){elapsed+=dt;if(elapsed>=duration())finish();}draw();}
 requestAnimationFrame(tick);
 })();
 

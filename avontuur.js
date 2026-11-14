@@ -10,14 +10,15 @@ function save(){try{localStorage.setItem(key,JSON.stringify(store));}catch{}}
 function state(){return current?store[current.id]:null;}
 function tone(){if(muted)return;try{audio??=new(window.AudioContext||window.webkitAudioContext)();audio.resume();[523,659,784].forEach((f,i)=>{const o=audio.createOscillator(),g=audio.createGain(),t=audio.currentTime+i*.09;o.frequency.value=f;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.055,t+.02);g.gain.exponentialRampToValueAtTime(.001,t+.24);o.connect(g);g.connect(audio.destination);o.start(t);o.stop(t+.25);});}catch{}}
 function stars(){return rooms.filter(r=>store[r.id]?.completed).length;}
+function prepareRoomLink(link,r){for(const event of ['pointerenter','focus','pointerdown'])link.addEventListener(event,()=>SintScene.preload(r),{once:true});}
 function fillHome(){
  $('doors').replaceChildren();$('room-list').replaceChildren();$('room-nav').replaceChildren();
  for(const r of rooms){
   const s=store[r.id],n=s?Math.min(8,s.step+(s.solved?1:0)):0,done=!!s?.completed;
   const a=document.createElement('a');a.className='door';a.href='#'+r.id;a.style.cssText='left:'+r.x+'%;top:'+r.y+'%;width:'+r.w+'%;height:'+r.h+'%';a.textContent=r.name;a.setAttribute('aria-label',r.name+', '+r.skill);
-  if(done){const star=document.createElement('b');star.className='star';star.textContent='★';a.append(star);}$('doors').append(a);
-  const card=document.createElement('a');card.className='room-card';card.href='#'+r.id;const line=document.createElement('span'),strong=document.createElement('strong'),small=document.createElement('small'),badge=document.createElement('b');strong.textContent=r.name;small.textContent=r.skill;badge.textContent=done?'★':n?n+'/8':'→';line.append(strong,small);card.append(line,badge);$('room-list').append(card);
-  const nav=document.createElement('a');nav.href='#'+r.id;nav.textContent=r.short;if(current?.id===r.id)nav.setAttribute('aria-current','page');$('room-nav').append(nav);
+  if(done){const star=document.createElement('b');star.className='star';star.textContent='★';a.append(star);}prepareRoomLink(a,r);$('doors').append(a);
+  const card=document.createElement('a');card.className='room-card';card.href='#'+r.id;const line=document.createElement('span'),strong=document.createElement('strong'),small=document.createElement('small'),badge=document.createElement('b');strong.textContent=r.name;small.textContent=r.skill;badge.textContent=done?'★':n?n+'/8':'→';line.append(strong,small);card.append(line,badge);prepareRoomLink(card,r);$('room-list').append(card);
+  const nav=document.createElement('a');nav.href='#'+r.id;nav.textContent=r.short;if(current?.id===r.id)nav.setAttribute('aria-current','page');prepareRoomLink(nav,r);$('room-nav').append(nav);
  }
  $('home-progress').textContent=stars()===7?'★ Alle kamers geholpen! Je bent een echte Sinthelper.':stars()+' van de 7 kamersterren verdiend';
 }

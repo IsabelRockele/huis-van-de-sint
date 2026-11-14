@@ -12,3 +12,8 @@
 @media(orientation:portrait){.play-layout:has(#hint:not([hidden]) .mab){grid-template-rows:minmax(0,.65fr) minmax(0,1.35fr)}#hint:has(.mab){font-size:12px;line-height:1.25}#hint .mab{height:100px}}
 
 #story-controls #story-party{grid-column:1/-1}
+
+/* Every choice in an exercise has the same typography and dimensions. */
+#answers{grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:1fr}
+#answers button,#answers button.long{font-size:clamp(16px,2.1vh,22px);min-width:0;overflow-wrap:break-word;display:flex;align-items:center;justify-content:center}
+@media(max-height:700px) and (orientation:landscape){#answers button,#answers button.long{font-size:16px}}
